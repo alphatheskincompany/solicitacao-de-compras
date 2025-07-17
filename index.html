@@ -23,6 +23,54 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue shadow on focus */
         }
+
+        /* Styles for the temporary PDF content container */
+        #pdf-temp-container {
+            position: absolute;
+            left: -9999px; /* Move off-screen */
+            top: -9999px;
+            width: 270mm; /* Approximate width for landscape A4 (297mm - 2*10mm margin) */
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in width */
+            font-family: 'Inter', sans-serif;
+            font-size: 10px; /* Base font size for PDF content */
+            background-color: white; /* Ensure white background for PDF */
+        }
+
+        #pdf-temp-container h1 {
+            text-align: center;
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #pdf-temp-container h2 {
+            color: #1f2937;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #pdf-temp-container p {
+            margin-bottom: 10px;
+        }
+        #pdf-temp-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed; /* Ensures columns respect defined widths */
+        }
+        #pdf-temp-container th, #pdf-temp-container td {
+            padding: 6px;
+            border: 1px solid #d1d5db;
+            text-align: left;
+            word-wrap: break-word; /* Breaks long words */
+            word-break: break-all; /* Ensures words break even if no spaces */
+            overflow: hidden; /* Hides overflowing content that still might break */
+        }
+        #pdf-temp-container .total-spent {
+            text-align: right;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -83,7 +131,12 @@
                             <option value="Crítica">Crítica</option>
                         </select>
                     </div>
-                    <!-- Remove button (hidden for the first row initially) -->
+                    <div class="md:col-span-5">
+                        <label for="itemObservation_0" class="block text-xs font-medium text-gray-600 mb-1">Observação (opcional):</label>
+                        <textarea id="itemObservation_0" name="itemObservation[]" rows="2"
+                                  class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y"></textarea>
+                    </div>
+                    <!-- Remove button -->
                     <div class="md:col-span-5 text-right">
                         <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm hidden">Remover</button>
                     </div>
@@ -109,6 +162,9 @@
         </div>
     </div>
 
+    <!-- Temporary container for PDF content generation -->
+    <div id="pdf-temp-container"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const requestDateInput = document.getElementById('requestDate');
@@ -117,7 +173,7 @@
             const purchaseForm = document.getElementById('purchaseForm');
             const confirmationMessage = document.getElementById('confirmationMessage');
             const generateReportBtn = document.getElementById('generateReportBtn');
-            // Removed references to purchasePurposeTextarea, generateJustificationBtn, etc.
+            const pdfTempContainer = document.getElementById('pdf-temp-container');
 
             let itemCount = 0; // Keep track of items to assign unique IDs
 
@@ -162,6 +218,11 @@
                             <option value="Crítica">Crítica</option>
                         </select>
                     </div>
+                    <div class="md:col-span-5">
+                        <label for="itemObservation_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Observação (opcional):</label>
+                        <textarea id="itemObservation_${itemCount}" name="itemObservation[]" rows="2"
+                                  class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y"></textarea>
+                    </div>
                     <div class="md:col-span-5 text-right">
                         <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm">Remover</button>
                     </div>
@@ -202,25 +263,29 @@
                 // Collect form data
                 const formData = new FormData(purchaseForm);
                 const data = {};
+                // Initialize arrays for multi-value fields
+                data.itemName = [];
+                data.itemQuantity = [];
+                data.itemValue = [];
+                data.itemUrgency = [];
+                data.itemObservation = []; // New: Initialize itemObservation array
+
                 formData.forEach((value, key) => {
-                    if (key.endsWith('[]')) {
-                        const baseKey = key.slice(0, -2);
-                        if (!data[baseKey]) {
-                            data[baseKey] = [];
-                        }
-                        data[baseKey].push(value);
-                    } else {
-                        data[key] = value;
-                    }
+                    if (key === 'itemName[]') data.itemName.push(value);
+                    else if (key === 'itemQuantity[]') data.itemQuantity.push(value);
+                    else if (key === 'itemValue[]') data.itemValue.push(value);
+                    else if (key === 'itemUrgency[]') data.itemUrgency.push(value);
+                    else if (key === 'itemObservation[]') data.itemObservation.push(value); // New: Collect observation
+                    else data[key] = value;
                 });
 
                 // Reconstruct item objects and calculate total
                 const items = [];
                 let totalSpent = 0; // Initialize total spent
-                if (data.itemName && data.itemValue && data.itemUrgency && data.itemQuantity) {
+                if (data.itemName && data.itemName.length > 0) { // Check if there are any items
                     for (let i = 0; i < data.itemName.length; i++) {
-                        const itemValue = parseFloat(data.itemValue[i]);
-                        const itemQuantity = parseInt(data.itemQuantity[i]);
+                        const itemValue = parseFloat(data.itemValue[i] || 0); // Default to 0 if value is empty
+                        const itemQuantity = parseInt(data.itemQuantity[i] || 0); // Default to 0 if quantity is empty
                         const itemTotal = itemValue * itemQuantity;
 
                         items.push({
@@ -228,54 +293,65 @@
                             quantity: itemQuantity,
                             value: itemValue,
                             total: itemTotal,
-                            urgency: data.itemUrgency[i]
+                            urgency: data.itemUrgency[i],
+                            observation: data.itemObservation[i] || '' // New: Add observation, default to empty string
                         });
                         totalSpent += itemTotal;
                     }
                 }
                 data.items = items;
                 data.totalSpent = totalSpent;
-                delete data.itemName;
-                delete data.itemValue;
-                delete data.itemUrgency;
-                delete data.itemQuantity;
 
                 console.log('Dados para o Relatório:', data);
 
-                // Build the report content without a table
-                let itemsHtml = items.map(item => `
-                    <div style="margin-bottom: 15px; border-bottom: 1px dashed #e0e0e0; padding-bottom: 10px;">
-                        <p style="margin-bottom: 5px;"><strong>Item:</strong> ${item.name}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Quantidade:</strong> ${item.quantity}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Valor Unitário:</strong> R$ ${item.value.toFixed(2).replace('.', ',')}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Total do Item:</strong> R$ ${item.total.toFixed(2).replace('.', ',')}</p>
-                        <p style="margin-left: 15px;"><strong>Urgência:</strong> ${item.urgency}</p>
-                    </div>
-                `).join('');
+                // Build the report content within the temporary container
+                pdfTempContainer.innerHTML = `
+                    <h1 class="text-center text-gray-800 text-xl mb-5">Relatório de Solicitação de Compra</h1>
+                    <p class="mb-2"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
+                    <p class="mb-2"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
+                    <p class="mb-4"><strong>Motivo da Compra:</strong> ${data.purchasePurpose}</p>
 
-                const reportContentHtml = `
-                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px;">
-                        <h1 style="text-align: center; color: #1f2937; font-size: 24px; margin-bottom: 20px;">Relatório de Solicitação de Compra</h1>
-                        <p style="margin-bottom: 10px;"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
-                        <p style="margin-bottom: 10px;"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
-                        <p style="margin-bottom: 20px;"><strong>Motivo da Compra:</strong> ${data.purchasePurpose}</p>
-
-                        <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 15px;">Detalhes dos Itens:</h2>
-                        ${itemsHtml}
-                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px;">
-                            Valor Total Estimado: R$ ${data.totalSpent.toFixed(2).replace('.', ',')}
-                        </p>
-                    </div>
+                    <h2 class="text-gray-800 text-lg mb-3">Detalhes dos Itens:</h2>
+                    <table class="w-full border-collapse mb-5">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="p-2 border border-gray-300 text-left w-[20%]">Item</th>
+                                <th class="p-2 border border-gray-300 text-left w-[10%]">Quant.</th>
+                                <th class="p-2 border border-gray-300 text-left w-[15%]">Valor Unit.</th>
+                                <th class="p-2 border border-gray-300 text-left w-[15%]">Total Item</th>
+                                <th class="p-2 border border-gray-300 text-left w-[10%]">Urgência</th>
+                                <th class="p-2 border border-gray-300 text-left w-[30%]">Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td class="p-2 border border-gray-300">${item.name}</td>
+                                    <td class="p-2 border border-gray-300">${item.quantity}</td>
+                                    <td class="p-2 border border-gray-300">R$ ${item.value.toFixed(2).replace('.', ',')}</td>
+                                    <td class="p-2 border border-gray-300">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
+                                    <td class="p-2 border border-gray-300">${item.urgency}</td>
+                                    <td class="p-2 border border-gray-300">${item.observation}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <p class="text-right text-lg font-bold mt-5 total-spent">
+                        Valor Total Estimado: R$ ${data.totalSpent.toFixed(2).replace('.', ',')}
+                    </p>
                 `;
 
-                // Generate PDF
-                html2pdf().from(reportContentHtml).set({
+                // Generate PDF from the temporary container
+                html2pdf().from(pdfTempContainer).set({
                     margin: 10,
                     filename: `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
                 }).save();
+
+                // Clear the temporary container after generation
+                pdfTempContainer.innerHTML = '';
 
                 // Display confirmation message
                 confirmationMessage.classList.remove('hidden');
