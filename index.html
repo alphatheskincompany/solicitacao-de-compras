@@ -6,8 +6,8 @@
     <title>Solicitação de Compra</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2pdf.js CDN for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- html2canvas CDN for image generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* Custom styles for Inter font and general body styling */
         body {
@@ -83,7 +83,12 @@
                             <option value="Crítica">Crítica</option>
                         </select>
                     </div>
-                    <!-- Remove button (hidden for the first row initially) -->
+                    <div class="md:col-span-5">
+                        <label for="itemObservation_0" class="block text-xs font-medium text-gray-600 mb-1">Observação (opcional):</label>
+                        <textarea id="itemObservation_0" name="itemObservation[]" rows="2"
+                                  class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y"></textarea>
+                    </div>
+                    <!-- Remove button -->
                     <div class="md:col-span-5 text-right">
                         <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm hidden">Remover</button>
                     </div>
@@ -105,7 +110,7 @@
 
         <!-- Submission Confirmation Message -->
         <div id="confirmationMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
-            Relatório gerado com sucesso!
+            Relatório (imagem) gerado com sucesso!
         </div>
     </div>
 
@@ -117,7 +122,6 @@
             const purchaseForm = document.getElementById('purchaseForm');
             const confirmationMessage = document.getElementById('confirmationMessage');
             const generateReportBtn = document.getElementById('generateReportBtn');
-            // Removed references to purchasePurposeTextarea, generateJustificationBtn, etc.
 
             let itemCount = 0; // Keep track of items to assign unique IDs
 
@@ -162,6 +166,11 @@
                             <option value="Crítica">Crítica</option>
                         </select>
                     </div>
+                    <div class="md:col-span-5">
+                        <label for="itemObservation_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Observação (opcional):</label>
+                        <textarea id="itemObservation_${itemCount}" name="itemObservation[]" rows="2"
+                                  class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y"></textarea>
+                    </div>
                     <div class="md:col-span-5 text-right">
                         <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm">Remover</button>
                     </div>
@@ -195,32 +204,36 @@
                 }
             });
 
-            // Handle form submission (now for PDF generation)
+            // Handle form submission (now for IMAGE generation)
             purchaseForm.addEventListener('submit', function(event) {
                 event.preventDefault(); // Prevent default form submission
 
                 // Collect form data
                 const formData = new FormData(purchaseForm);
                 const data = {};
+                // Initialize arrays for multi-value fields
+                data.itemName = [];
+                data.itemQuantity = [];
+                data.itemValue = [];
+                data.itemUrgency = [];
+                data.itemObservation = []; // Initialize itemObservation array
+
                 formData.forEach((value, key) => {
-                    if (key.endsWith('[]')) {
-                        const baseKey = key.slice(0, -2);
-                        if (!data[baseKey]) {
-                            data[baseKey] = [];
-                        }
-                        data[baseKey].push(value);
-                    } else {
-                        data[key] = value;
-                    }
+                    if (key === 'itemName[]') data.itemName.push(value);
+                    else if (key === 'itemQuantity[]') data.itemQuantity.push(value);
+                    else if (key === 'itemValue[]') data.itemValue.push(value);
+                    else if (key === 'itemUrgency[]') data.itemUrgency.push(value);
+                    else if (key === 'itemObservation[]') data.itemObservation.push(value); // Collect observation
+                    else data[key] = value;
                 });
 
                 // Reconstruct item objects and calculate total
                 const items = [];
                 let totalSpent = 0; // Initialize total spent
-                if (data.itemName && data.itemValue && data.itemUrgency && data.itemQuantity) {
+                if (data.itemName && data.itemName.length > 0) { // Check if there are any items
                     for (let i = 0; i < data.itemName.length; i++) {
-                        const itemValue = parseFloat(data.itemValue[i]);
-                        const itemQuantity = parseInt(data.itemQuantity[i]);
+                        const itemValue = parseFloat(data.itemValue[i] || 0); // Default to 0 if value is empty
+                        const itemQuantity = parseInt(data.itemQuantity[i] || 0); // Default to 0 if quantity is empty
                         const itemTotal = itemValue * itemQuantity;
 
                         items.push({
@@ -228,33 +241,31 @@
                             quantity: itemQuantity,
                             value: itemValue,
                             total: itemTotal,
-                            urgency: data.itemUrgency[i]
+                            urgency: data.itemUrgency[i],
+                            observation: data.itemObservation[i] || '' // Add observation, default to empty string
                         });
                         totalSpent += itemTotal;
                     }
                 }
                 data.items = items;
                 data.totalSpent = totalSpent;
-                delete data.itemName;
-                delete data.itemValue;
-                delete data.itemUrgency;
-                delete data.itemQuantity;
 
                 console.log('Dados para o Relatório:', data);
 
-                // Build the report content without a table
+                // Build the report content as a string, using simple text format for items
                 let itemsHtml = items.map(item => `
-                    <div style="margin-bottom: 15px; border-bottom: 1px dashed #e0e0e0; padding-bottom: 10px;">
-                        <p style="margin-bottom: 5px;"><strong>Item:</strong> ${item.name}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Quantidade:</strong> ${item.quantity}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Valor Unitário:</strong> R$ ${item.value.toFixed(2).replace('.', ',')}</p>
-                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Total do Item:</strong> R$ ${item.total.toFixed(2).replace('.', ',')}</p>
-                        <p style="margin-left: 15px;"><strong>Urgência:</strong> ${item.urgency}</p>
+                    <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #e0e0e0;">
+                        <p style="margin-bottom: 2px; word-wrap: break-word; word-break: break-all;"><strong>Item:</strong> ${item.name}</p>
+                        <p style="margin-left: 8px; margin-bottom: 2px; word-wrap: break-word; word-break: break-all;"><strong>Quantidade:</strong> ${item.quantity}</p>
+                        <p style="margin-left: 8px; margin-bottom: 2px; word-wrap: break-word; word-break: break-all;"><strong>Valor Unitário:</strong> R$ ${item.value.toFixed(2).replace('.', ',')}</p>
+                        <p style="margin-left: 8px; margin-bottom: 2px; word-wrap: break-word; word-break: break-all;"><strong>Total do Item:</strong> R$ ${item.total.toFixed(2).replace('.', ',')}</p>
+                        <p style="margin-left: 8px; margin-bottom: 2px; word-wrap: break-word; word-break: break-all;"><strong>Urgência:</strong> ${item.urgency}</p>
+                        ${item.observation ? `<p style="margin-left: 8px; word-wrap: break-word; word-break: break-all;"><strong>Observação:</strong> ${item.observation.replace(/\n/g, '<br>')}</p>` : ''}
                     </div>
                 `).join('');
 
                 const reportContentHtml = `
-                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px;">
+                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px; background-color: white; width: 800px; margin: auto;">
                         <h1 style="text-align: center; color: #1f2937; font-size: 24px; margin-bottom: 20px;">Relatório de Solicitação de Compra</h1>
                         <p style="margin-bottom: 10px;"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
                         <p style="margin-bottom: 10px;"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
@@ -268,14 +279,34 @@
                     </div>
                 `;
 
-                // Generate PDF
-                html2pdf().from(reportContentHtml).set({
-                    margin: 10,
-                    filename: `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                }).save();
+                // Create a temporary div to render the content for html2canvas
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = reportContentHtml;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px'; // Move off-screen
+                tempDiv.style.top = '-9999px';
+                document.body.appendChild(tempDiv);
+
+                html2canvas(tempDiv, {
+                    scale: 2, // Increase scale for better image quality
+                    logging: false,
+                    useCORS: true, // Important for images if any are used (though none here)
+                    backgroundColor: '#ffffff' // Ensure white background
+                }).then(canvas => {
+                    // Create a link to download the image
+                    const link = document.createElement('a');
+                    link.download = `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link); // Append to body to make it clickable
+                    link.click(); // Programmatically click the link to trigger download
+                    document.body.removeChild(link); // Remove link after click
+                    document.body.removeChild(tempDiv); // Remove temporary div
+                }).catch(error => {
+                    console.error("Erro ao gerar imagem:", error);
+                    alert("Ocorreu um erro ao gerar o relatório como imagem. Por favor, tente novamente.");
+                    document.body.removeChild(tempDiv); // Ensure tempDiv is removed on error
+                });
+
 
                 // Display confirmation message
                 confirmationMessage.classList.remove('hidden');
