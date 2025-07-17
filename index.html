@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitação de Compra</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf.js CDN for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Ensure rounded corners on all elements */
+        .rounded-lg {
+            border-radius: 0.5rem; /* Default Tailwind rounded-lg */
+        }
+        /* Custom focus styles */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue shadow on focus */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Formulário de Solicitação de Compra</h1>
+
+        <form id="purchaseForm" class="space-y-6">
+            <!-- Requester Name -->
+            <div>
+                <label for="requesterName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Solicitante:</label>
+                <input type="text" id="requesterName" name="requesterName" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Date (Automatic) -->
+            <div>
+                <label for="requestDate" class="block text-sm font-medium text-gray-700 mb-1">Data da Solicitação:</label>
+                <input type="text" id="requestDate" name="requestDate" readonly
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+            </div>
+
+            <!-- Purpose of Purchase -->
+            <div>
+                <label for="purchasePurpose" class="block text-sm font-medium text-gray-700 mb-1">Motivo da Compra:</label>
+                <textarea id="purchasePurpose" name="purchasePurpose" rows="4" required
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+            </div>
+
+            <!-- Item Details Section -->
+            <div id="itemDetailsSection" class="space-y-4 border border-gray-200 p-4 rounded-lg bg-gray-50">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Detalhes dos Itens:</h2>
+
+                <!-- Initial Item Row Template -->
+                <div class="item-row grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-3 bg-white rounded-lg shadow-sm">
+                    <div class="md:col-span-2">
+                        <label for="itemName_0" class="block text-xs font-medium text-gray-600 mb-1">Item:</label>
+                        <input type="text" id="itemName_0" name="itemName[]" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemQuantity_0" class="block text-xs font-medium text-gray-600 mb-1">Quantidade:</label>
+                        <input type="number" id="itemQuantity_0" name="itemQuantity[]" min="1" value="1" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemValue_0" class="block text-xs font-medium text-gray-600 mb-1">Valor Unitário:</label>
+                        <input type="number" id="itemValue_0" name="itemValue[]" step="0.01" min="0" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemUrgency_0" class="block text-xs font-medium text-gray-600 mb-1">Urgência:</label>
+                        <select id="itemUrgency_0" name="itemUrgency[]" required
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <option value="">Selecione</option>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média">Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+                    <!-- Remove button (hidden for the first row initially) -->
+                    <div class="md:col-span-5 text-right">
+                        <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm hidden">Remover</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Item Button -->
+            <button type="button" id="addItemBtn"
+                    class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-200 ease-in-out shadow-md">
+                Adicionar Outro Item
+            </button>
+
+            <!-- Generate Report Button -->
+            <button type="submit" id="generateReportBtn"
+                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 ease-in-out shadow-lg font-semibold text-lg">
+                Gerar Relatório
+            </button>
+        </form>
+
+        <!-- Submission Confirmation Message -->
+        <div id="confirmationMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+            Relatório gerado com sucesso!
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const requestDateInput = document.getElementById('requestDate');
+            const itemDetailsSection = document.getElementById('itemDetailsSection');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const purchaseForm = document.getElementById('purchaseForm');
+            const confirmationMessage = document.getElementById('confirmationMessage');
+            const generateReportBtn = document.getElementById('generateReportBtn');
+            // Removed references to purchasePurposeTextarea, generateJustificationBtn, etc.
+
+            let itemCount = 0; // Keep track of items to assign unique IDs
+
+            // Function to set the current date
+            function setCurrentDate() {
+                const today = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                requestDateInput.value = today.toLocaleDateString('pt-BR', options);
+            }
+
+            // Function to add a new item row
+            function addItemRow() {
+                itemCount++; // Increment for new unique IDs
+
+                const newItemRow = document.createElement('div');
+                newItemRow.classList.add('item-row', 'grid', 'grid-cols-1', 'md:grid-cols-5', 'gap-4', 'items-end', 'p-3', 'bg-white', 'rounded-lg', 'shadow-sm', 'mt-4');
+
+                newItemRow.innerHTML = `
+                    <div class="md:col-span-2">
+                        <label for="itemName_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Item:</label>
+                        <input type="text" id="itemName_${itemCount}" name="itemName[]" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemQuantity_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Quantidade:</label>
+                        <input type="number" id="itemQuantity_${itemCount}" name="itemQuantity[]" min="1" value="1" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemValue_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Valor Unitário:</label>
+                        <input type="number" id="itemValue_${itemCount}" name="itemValue[]" step="0.01" min="0" required
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label for="itemUrgency_${itemCount}" class="block text-xs font-medium text-gray-600 mb-1">Urgência:</label>
+                        <select id="itemUrgency_${itemCount}" name="itemUrgency[]" required
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <option value="">Selecione</option>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média">Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-5 text-right">
+                        <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 text-sm">Remover</button>
+                    </div>
+                `;
+
+                itemDetailsSection.appendChild(newItemRow);
+
+                // Add event listener to the new remove button
+                newItemRow.querySelector('.remove-item-btn').addEventListener('click', function() {
+                    newItemRow.remove();
+                });
+
+                // Show remove button for the first row if more than one item exists
+                const firstRowRemoveBtn = itemDetailsSection.querySelector('.item-row .remove-item-btn');
+                if (itemDetailsSection.querySelectorAll('.item-row').length > 1 && firstRowRemoveBtn) {
+                    firstRowRemoveBtn.classList.remove('hidden');
+                }
+            }
+
+            // Initial setup
+            setCurrentDate(); // Set date on page load
+
+            // Event listener for "Add Item" button
+            addItemBtn.addEventListener('click', addItemRow);
+
+            // Event listener for removing initial item row (if it's the only one)
+            itemDetailsSection.querySelector('.item-row .remove-item-btn').addEventListener('click', function(event) {
+                // Only remove if there's more than one item row
+                if (itemDetailsSection.querySelectorAll('.item-row').length > 1) {
+                    event.target.closest('.item-row').remove();
+                }
+            });
+
+            // Handle form submission (now for PDF generation)
+            purchaseForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                // Collect form data
+                const formData = new FormData(purchaseForm);
+                const data = {};
+                formData.forEach((value, key) => {
+                    if (key.endsWith('[]')) {
+                        const baseKey = key.slice(0, -2);
+                        if (!data[baseKey]) {
+                            data[baseKey] = [];
+                        }
+                        data[baseKey].push(value);
+                    } else {
+                        data[key] = value;
+                    }
+                });
+
+                // Reconstruct item objects and calculate total
+                const items = [];
+                let totalSpent = 0; // Initialize total spent
+                if (data.itemName && data.itemValue && data.itemUrgency && data.itemQuantity) {
+                    for (let i = 0; i < data.itemName.length; i++) {
+                        const itemValue = parseFloat(data.itemValue[i]);
+                        const itemQuantity = parseInt(data.itemQuantity[i]);
+                        const itemTotal = itemValue * itemQuantity;
+
+                        items.push({
+                            name: data.itemName[i],
+                            quantity: itemQuantity,
+                            value: itemValue,
+                            total: itemTotal,
+                            urgency: data.itemUrgency[i]
+                        });
+                        totalSpent += itemTotal;
+                    }
+                }
+                data.items = items;
+                data.totalSpent = totalSpent;
+                delete data.itemName;
+                delete data.itemValue;
+                delete data.itemUrgency;
+                delete data.itemQuantity;
+
+                console.log('Dados para o Relatório:', data);
+
+                // Build the report content without a table
+                let itemsHtml = items.map(item => `
+                    <div style="margin-bottom: 15px; border-bottom: 1px dashed #e0e0e0; padding-bottom: 10px;">
+                        <p style="margin-bottom: 5px;"><strong>Item:</strong> ${item.name}</p>
+                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Quantidade:</strong> ${item.quantity}</p>
+                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Valor Unitário:</strong> R$ ${item.value.toFixed(2).replace('.', ',')}</p>
+                        <p style="margin-left: 15px; margin-bottom: 5px;"><strong>Total do Item:</strong> R$ ${item.total.toFixed(2).replace('.', ',')}</p>
+                        <p style="margin-left: 15px;"><strong>Urgência:</strong> ${item.urgency}</p>
+                    </div>
+                `).join('');
+
+                const reportContentHtml = `
+                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px;">
+                        <h1 style="text-align: center; color: #1f2937; font-size: 24px; margin-bottom: 20px;">Relatório de Solicitação de Compra</h1>
+                        <p style="margin-bottom: 10px;"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
+                        <p style="margin-bottom: 10px;"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
+                        <p style="margin-bottom: 20px;"><strong>Motivo da Compra:</strong> ${data.purchasePurpose}</p>
+
+                        <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 15px;">Detalhes dos Itens:</h2>
+                        ${itemsHtml}
+                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px;">
+                            Valor Total Estimado: R$ ${data.totalSpent.toFixed(2).replace('.', ',')}
+                        </p>
+                    </div>
+                `;
+
+                // Generate PDF
+                html2pdf().from(reportContentHtml).set({
+                    margin: 10,
+                    filename: `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                }).save();
+
+                // Display confirmation message
+                confirmationMessage.classList.remove('hidden');
+                purchaseForm.reset(); // Clear the form
+                // Reset item rows to just one
+                while (itemDetailsSection.querySelectorAll('.item-row').length > 1) {
+                    itemDetailsSection.lastChild.remove();
+                }
+                // Hide remove button for the single remaining row
+                itemDetailsSection.querySelector('.item-row .remove-item-btn').classList.add('hidden');
+                setCurrentDate(); // Re-set the date
+
+                // Optionally hide the confirmation message after a few seconds
+                setTimeout(() => {
+                    confirmationMessage.classList.add('hidden');
+                }, 5000);
+            });
+
+            // Show remove button for the first row if more than one item exists on initial load (unlikely but good for robustness)
+            if (itemDetailsSection.querySelectorAll('.item-row').length > 1) {
+                itemDetailsSection.querySelector('.item-row .remove-item-btn').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
