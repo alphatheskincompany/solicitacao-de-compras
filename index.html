@@ -3,334 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Questionário Interativo - iBuild</title>
+    <title>Solicitação de Compra</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas CDN for image generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Custom styles for Inter font and general body styling */
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
+        /* Ensure rounded corners on all elements */
+        .rounded-lg {
+            border-radius: 0.5rem; /* Default Tailwind rounded-lg */
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .custom-radio input[type="radio"] {
-            display: none;
-        }
-        .custom-radio label {
-            cursor: pointer;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #D1D5DB;
-            transition: all 0.2s ease-in-out;
-            background-color: #ffffff;
-        }
-        .custom-radio input[type="radio"]:checked + label {
-            background-color: #1E40AF;
-            color: #ffffff;
-            border-color: #1E40AF;
-        }
-        .custom-radio label:hover {
-            border-color: #3B82F6;
+        /* Custom focus styles */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue shadow on focus */
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Formulário de Solicitação de Compra</h1>
 
-    <div id="quiz-container" class="bg-white w-full max-w-2xl p-6 sm:p-8 rounded-xl shadow-lg relative overflow-hidden">
-        <!-- Conteúdo do Questionário -->
-        <div id="question-area">
-            <div class="text-center mb-6">
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Processo Seletivo iBuild</h1>
-                <p class="text-gray-500 mt-1">Vaga de Estágio em Arquitetura</p>
+        <form id="purchaseForm" class="space-y-6">
+            <!-- Requester Name -->
+            <div>
+                <label for="requesterName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Solicitante:</label>
+                <input type="text" id="requesterName" name="requesterName" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-            <div id="question-content" class="fade-in">
-                <p id="question-text" class="text-lg font-medium text-gray-700 mb-4"></p>
-                <div id="answer-input"></div>
-            </div>
-            <div id="error-message" class="text-red-500 text-sm mt-2 hidden">Por favor, responda a pergunta.</div>
-            <div class="mt-8 text-right">
-                <button id="next-btn" class="bg-blue-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
-                    Próximo
-                </button>
-            </div>
-        </div>
 
-        <!-- Tela de Resumo -->
-        <div id="summary-area" class="hidden fade-in">
-            <div id="capture-area">
-                 <div class="text-center mb-6">
-                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Processo Seletivo iBuild</h1>
-                    <p class="text-gray-500 mt-1">Resumo das Respostas</p>
-                </div>
-                <div id="summary-content" class="space-y-4 bg-gray-50 p-6 rounded-lg border">
-                </div>
+            <!-- Date (Automatic) -->
+            <div>
+                <label for="requestDate" class="block text-sm font-medium text-gray-700 mb-1">Data da Solicitação:</label>
+                <input type="text" id="requestDate" name="requestDate" readonly
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
             </div>
-             <div class="mt-8 text-center flex flex-col sm:flex-row justify-center gap-4">
-                <button id="download-btn" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors">
-                    Baixar como Imagem
-                </button>
-                <button onclick="location.reload()" class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors">
-                    Reiniciar Questionário
-                </button>
-            </div>
-        </div>
 
-        <!-- NOVO: Modal de Senha -->
-        <div id="password-modal" class="hidden absolute top-0 left-0 w-full h-full bg-white bg-opacity-95 flex items-center justify-center p-4 fade-in">
-            <div class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm">
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
-                <p class="text-gray-600 mb-6">Digite a senha para ver o resumo.</p>
-                <input type="password" id="password-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" placeholder="••••">
-                <p id="password-error" class="text-red-500 text-sm mt-2 hidden">Senha incorreta. Tente novamente.</p>
-                <button id="password-submit" class="w-full mt-6 bg-blue-700 text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
-                    Ver Respostas
-                </button>
+            <!-- Purchase Destination -->
+            <div>
+                <label for="purchaseDestination" class="block text-sm font-medium text-gray-700 mb-1">Local da Compra:</label>
+                <select id="purchaseDestination" name="purchaseDestination" required
+                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="">Selecione</option>
+                    <option value="Escritório">Escritório</option>
+                    <option value="Clínica">Clínica</option>
+                </select>
             </div>
+
+            <!-- Items Manual Input -->
+            <div>
+                <label for="itemsManualInput" class="block text-sm font-medium text-gray-700 mb-1">Itens Solicitados (digite livremente):</label>
+                <textarea id="itemsManualInput" name="itemsManualInput" rows="8" required
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+            </div>
+
+            <!-- Total Value -->
+            <div>
+                <label for="totalValue" class="block text-sm font-medium text-gray-700 mb-1">Valor Total Estimado (R$):</label>
+                <input type="number" id="totalValue" name="totalValue" step="0.01" min="0" value="0.00" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Shipping Cost -->
+            <div>
+                <label for="shippingCost" class="block text-sm font-medium text-gray-700 mb-1">Frete (R$):</label>
+                <input type="number" id="shippingCost" name="shippingCost" step="0.01" min="0" value="0.00" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Generate Report Button -->
+            <button type="submit" id="generateReportBtn"
+                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 ease-in-out shadow-lg font-semibold text-lg">
+                Gerar Relatório
+            </button>
+        </form>
+
+        <!-- Submission Confirmation Message -->
+        <div id="confirmationMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
+            Relatório (imagem) gerado com sucesso!
         </div>
     </div>
 
     <script>
-        const questions = [
-            { text: "Nome completo:", type: "text", placeholder: "Digite seu nome completo" },
-            { text: "Idade:", type: "number", placeholder: "Digite sua idade" },
-            { text: "Período atual do curso e semestre:", type: "text", placeholder: "Ex: 8º período, 4º ano" },
-            { text: "Instituição de ensino:", type: "text", placeholder: "Nome da sua universidade" },
-            { text: "Você já estagiou ou trabalhou na área de arquitetura anteriormente?", type: "radio", options: ["Sim", "Não"] },
-            { text: "Onde?", type: "text", placeholder: "Nome da empresa (se aplicável)", dependsOn: 4, dependsOnValue: "Sim" },
-            { text: "Tem experiência com obras? Descreva brevemente.", type: "textarea", placeholder: "Descreva sua experiência..." },
-            { text: "Quais softwares você domina? (Ex: Revit, AutoCAD, SketchUp, Excel, etc.)", type: "text", placeholder: "Liste os softwares que você domina" },
-            { text: "Nível de conhecimento em Revit:", type: "select", options: ["Básico", "Intermediário", "Avançado"] },
-            { text: "Você possui disponibilidade para atuar em Alphaville?", type: "radio", options: ["Sim", "Não"] },
-            { text: "Como você lida com prazos e pressão?", type: "textarea", placeholder: "Descreva sua abordagem..." },
-            { text: "Você prefere atividades em escritório ou em obra? Por quê?", type: "textarea", placeholder: "Explique sua preferência e o motivo" },
-            { text: "Como você descreveria seu perfil profissional em três palavras?", type: "text", placeholder: "Ex: Criativo, Proativo, Organizado" },
-            { text: "Quais áreas dentro da arquitetura você mais gosta? (projeto, interiores, execução, urbanismo...)", type: "text", placeholder: "Liste suas áreas de interesse" },
-            { text: "Tem interesse em efetivação futura após a conclusão do estágio?", type: "radio", options: ["Sim", "Não"] },
-            { text: "[Teste técnico] Explique brevemente como você montaria um layout de planta baixa para uma residência de 80m²:", type: "textarea", placeholder: "Descreva o processo de setorização, fluxos..." },
-            { text: "[Teste técnico] Em Revit, como você insere um componente e ajusta suas propriedades?", type: "textarea", placeholder: "Descreva o passo a passo..." },
-            { text: "O que te motiva a querer estagiar conosco na iBuild?", type: "textarea", placeholder: "Conte-nos sua motivação..." },
-            { text: "Tem alguma dúvida ou consideração que gostaria de registrar?", type: "textarea", placeholder: "Sinta-se à vontade para perguntar (opcional)" }
-        ];
+        document.addEventListener('DOMContentLoaded', function() {
+            const requestDateInput = document.getElementById('requestDate');
+            const purchaseForm = document.getElementById('purchaseForm');
+            const confirmationMessage = document.getElementById('confirmationMessage');
 
-        let currentQuestionIndex = 0;
-        const userAnswers = [];
-
-        const progressBar = document.getElementById('progress-bar');
-        const questionText = document.getElementById('question-text');
-        const answerInputContainer = document.getElementById('answer-input');
-        const nextBtn = document.getElementById('next-btn');
-        const errorMessage = document.getElementById('error-message');
-        const passwordModal = document.getElementById('password-modal');
-        const passwordInput = document.getElementById('password-input');
-        const passwordSubmit = document.getElementById('password-submit');
-        const passwordError = document.getElementById('password-error');
-
-        function displayQuestion() {
-            answerInputContainer.innerHTML = '';
-            errorMessage.classList.add('hidden');
-            
-            const questionContent = document.getElementById('question-content');
-            questionContent.classList.remove('fade-in');
-            void questionContent.offsetWidth; 
-            questionContent.classList.add('fade-in');
-
-            const currentQuestion = questions[currentQuestionIndex];
-            questionText.textContent = currentQuestion.text;
-
-            switch (currentQuestion.type) {
-                case 'text':
-                case 'number':
-                    const input = document.createElement('input');
-                    input.type = currentQuestion.type;
-                    input.placeholder = currentQuestion.placeholder;
-                    input.className = "w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
-                    input.id = "answer";
-                    answerInputContainer.appendChild(input);
-                    break;
-                case 'textarea':
-                    const textarea = document.createElement('textarea');
-                    textarea.placeholder = currentQuestion.placeholder;
-                    textarea.rows = 5;
-                    textarea.className = "w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
-                    textarea.id = "answer";
-                    answerInputContainer.appendChild(textarea);
-                    break;
-                case 'radio':
-                    const radioContainer = document.createElement('div');
-                    radioContainer.className = "flex flex-wrap gap-4 custom-radio";
-                    currentQuestion.options.forEach(option => {
-                        const radioInput = document.createElement('input');
-                        radioInput.type = 'radio';
-                        radioInput.name = 'answer';
-                        radioInput.value = option;
-                        radioInput.id = `option-${option.replace(/\s+/g, '')}`;
-                        
-                        const radioLabel = document.createElement('label');
-                        radioLabel.htmlFor = `option-${option.replace(/\s+/g, '')}`;
-                        radioLabel.textContent = option;
-
-                        radioContainer.appendChild(radioInput);
-                        radioContainer.appendChild(radioLabel);
-                    });
-                    answerInputContainer.appendChild(radioContainer);
-                    break;
-                case 'select':
-                    const select = document.createElement('select');
-                    select.className = "w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500";
-                    select.id = "answer";
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = "";
-                    defaultOption.textContent = "Selecione uma opção";
-                    defaultOption.disabled = true;
-                    defaultOption.selected = true;
-                    select.appendChild(defaultOption);
-                    currentQuestion.options.forEach(option => {
-                        const selectOption = document.createElement('option');
-                        selectOption.value = option;
-                        selectOption.textContent = option;
-                        select.appendChild(selectOption);
-                    });
-                    answerInputContainer.appendChild(select);
-                    break;
-            }
-            const firstInput = answerInputContainer.querySelector('input, textarea, select');
-            if (firstInput) {
-                firstInput.focus();
-            }
-        }
-
-        function updateProgress() {
-            const totalQuestions = questions.length;
-            const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-            progressBar.style.width = `${progressPercentage}%`;
-        }
-        
-        function handleNextQuestion() {
-            let answer = '';
-            const currentQuestion = questions[currentQuestionIndex];
-            const inputElement = document.getElementById('answer');
-            const radioElement = document.querySelector('input[name="answer"]:checked');
-
-            if (currentQuestion.type === 'radio') {
-                answer = radioElement ? radioElement.value : '';
-            } else {
-                answer = inputElement ? inputElement.value.trim() : '';
+            // Function to set the current date
+            function setCurrentDate() {
+                const today = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                requestDateInput.value = today.toLocaleDateString('pt-BR', options);
             }
 
-            if (!answer && currentQuestionIndex !== questions.length - 1) {
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-            errorMessage.classList.add('hidden');
+            // Initial setup
+            setCurrentDate(); // Set date on page load
 
-            userAnswers.push({ question: currentQuestion.text, answer: answer || "Não respondido" });
+            // Handle form submission (now for IMAGE generation)
+            purchaseForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
 
-            currentQuestionIndex++;
-            
-            if (questions[currentQuestionIndex] && questions[currentQuestionIndex].dependsOn !== undefined) {
-                const dependentQuestion = userAnswers[questions[currentQuestionIndex].dependsOn];
-                if (dependentQuestion.answer !== questions[currentQuestionIndex].dependsOnValue) {
-                    userAnswers.push({ question: questions[currentQuestionIndex].text, answer: "Não se aplica" });
-                    currentQuestionIndex++;
-                }
-            }
+                // Collect form data
+                const formData = new FormData(purchaseForm);
+                const data = {
+                    requesterName: formData.get('requesterName'),
+                    requestDate: formData.get('requestDate'),
+                    purchaseDestination: formData.get('purchaseDestination'), // New: Collect purchase destination
+                    itemsManualInput: formData.get('itemsManualInput'),
+                    totalValue: parseFloat(formData.get('totalValue') || 0),
+                    shippingCost: parseFloat(formData.get('shippingCost') || 0)
+                };
 
-            if (currentQuestionIndex < questions.length) {
-                displayQuestion();
-                updateProgress();
-                if (currentQuestionIndex === questions.length - 1) {
-                    nextBtn.textContent = "Finalizar";
-                }
-            } else {
-                // Finalizou as perguntas, mostra o modal de senha
-                updateProgress();
-                document.getElementById('question-area').classList.add('hidden');
-                passwordModal.classList.remove('hidden');
-                passwordInput.focus();
-            }
-        }
+                console.log('Dados para o Relatório:', data);
 
-        function displaySummary() {
-            const summaryArea = document.getElementById('summary-area');
-            const summaryContent = document.getElementById('summary-content');
-            
-            summaryArea.classList.remove('hidden');
-            
-            userAnswers.forEach(item => {
-                const questionEl = document.createElement('p');
-                questionEl.className = "font-semibold text-gray-700";
-                questionEl.textContent = item.question;
+                // Build the report content as a string for html2canvas
+                const reportContentHtml = `
+                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px; background-color: white; width: 800px; margin: auto;">
+                        <h1 style="text-align: center; color: #1f2937; font-size: 24px; margin-bottom: 20px;">Relatório de Solicitação de Compra</h1>
+                        <p style="margin-bottom: 10px;"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
+                        <p style="margin-bottom: 10px;"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
+                        <p style="margin-bottom: 20px;"><strong>Local da Compra:</strong> ${data.purchaseDestination}</p>
 
-                const answerEl = document.createElement('p');
-                answerEl.className = "text-gray-600 pl-4 border-l-2 border-blue-200 whitespace-pre-wrap";
-                answerEl.textContent = item.answer;
+                        <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 10px;">Itens Solicitados:</h2>
+                        <div style="margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word; word-break: break-all;">
+                            ${data.itemsManualInput}
+                        </div>
 
-                summaryContent.appendChild(questionEl);
-                summaryContent.appendChild(answerEl);
-            });
-        }
+                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px;">
+                            Valor Total Estimado: R$ ${data.totalValue.toFixed(2).replace('.', ',')}
+                        </p>
+                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 10px;">
+                            Frete: R$ ${data.shippingCost.toFixed(2).replace('.', ',')}
+                        </p>
+                        <p style="text-align: right; font-size: 20px; font-weight: bold; margin-top: 20px; padding-top: 10px; border-top: 2px solid #1f2937;">
+                            Total Geral: R$ ${(data.totalValue + data.shippingCost).toFixed(2).replace('.', ',')}
+                        </p>
+                    </div>
+                `;
 
-        function checkPassword() {
-            if (passwordInput.value === '1234') {
-                passwordError.classList.add('hidden');
-                passwordModal.classList.add('hidden');
-                displaySummary();
-            } else {
-                passwordError.classList.remove('hidden');
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
-        }
+                // Create a temporary div to render the content for html2canvas
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = reportContentHtml;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px'; // Move off-screen
+                tempDiv.style.top = '-9999px';
+                document.body.appendChild(tempDiv);
 
-        nextBtn.addEventListener('click', handleNextQuestion);
-        passwordSubmit.addEventListener('click', checkPassword);
-        passwordInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                checkPassword();
-            }
-        });
-        
-        answerInputContainer.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey && questions[currentQuestionIndex].type !== 'textarea') {
-                event.preventDefault();
-                nextBtn.click();
-            }
-        });
+                html2canvas(tempDiv, {
+                    scale: 2, // Increase scale for better image quality
+                    logging: false,
+                    useCORS: true, // Important for images if any are used (though none here)
+                    backgroundColor: '#ffffff' // Ensure white background
+                }).then(canvas => {
+                    // Create a link to download the image
+                    const link = document.createElement('a');
+                    link.download = `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link); // Append to body to make it clickable
+                    link.click(); // Programmatically click the link to trigger download
+                    document.body.removeChild(link); // Remove link after click
+                    document.body.removeChild(tempDiv); // Remove temporary div
+                }).catch(error => {
+                    console.error("Erro ao gerar imagem:", error);
+                    alert("Ocorreu um erro ao gerar o relatório como imagem. Por favor, tente novamente.");
+                    document.body.removeChild(tempDiv); // Ensure tempDiv is removed on error
+                });
 
-        document.getElementById('download-btn').addEventListener('click', function() {
-            const captureArea = document.getElementById('capture-area');
-            
-            captureArea.style.padding = '20px';
-            captureArea.style.backgroundColor = '#ffffff';
 
-            html2canvas(captureArea, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff'
-            }).then(canvas => {
-                const link = document.createElement('a');
-                const candidateName = userAnswers[0] ? userAnswers[0].answer.replace(/\s+/g, '_') : 'candidato';
-                link.download = `respostas_${candidateName}_iBuild.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                // Display confirmation message
+                confirmationMessage.classList.remove('hidden');
+                purchaseForm.reset(); // Clear the form
+                setCurrentDate(); // Re-set the date
 
-                captureArea.style.padding = '0px';
-                captureArea.style.backgroundColor = 'transparent';
+                // Optionally hide the confirmation message after a few seconds
+                setTimeout(() => {
+                    confirmationMessage.classList.add('hidden');
+                }, 5000);
             });
         });
-
-        // Inicia o questionário
-        displayQuestion();
     </script>
 </body>
 </html>
