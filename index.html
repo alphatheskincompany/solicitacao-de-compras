@@ -6,49 +6,42 @@
     <title>Solicitação de Compra</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2canvas CDN for image generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         /* Custom styles for Inter font and general body styling */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            background-color: #1f2937; /* Dark gray background */
         }
         /* Ensure rounded corners on all elements */
         .rounded-lg {
             border-radius: 0.5rem; /* Default Tailwind rounded-lg */
         }
-        /* Custom focus styles */
+        /* Custom focus styles for inputs in dark theme */
         input:focus, textarea:focus, select:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue shadow on focus */
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.5); /* Light gray shadow on focus */
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Formulário de Solicitação de Compra</h1>
+    <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl text-gray-200">
+        <h1 class="text-3xl font-bold text-gray-100 mb-6 text-center">Formulário de Solicitação de Compra</h1>
 
-        <form id="purchaseForm" class="space-y-6">
+        <form id="formSolicitacao" class="space-y-6">
             <!-- Requester Name -->
             <div>
-                <label for="requesterName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Solicitante:</label>
-                <input type="text" id="requesterName" name="requesterName" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            </div>
-
-            <!-- Date (Automatic) -->
-            <div>
-                <label for="requestDate" class="block text-sm font-medium text-gray-700 mb-1">Data da Solicitação:</label>
-                <input type="text" id="requestDate" name="requestDate" readonly
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+                <label for="solicitante" class="block text-sm font-medium text-gray-300 mb-1">Nome do Solicitante:</label>
+                <input type="text" id="solicitante" name="solicitante" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
 
             <!-- Purchase Destination -->
             <div>
-                <label for="purchaseDestination" class="block text-sm font-medium text-gray-700 mb-1">Local da Compra:</label>
-                <select id="purchaseDestination" name="purchaseDestination" required
-                        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <label for="localDaCompra" class="block text-sm font-medium text-gray-300 mb-1">Local da Compra:</label>
+                <select id="localDaCompra" name="localDaCompra" required
+                        class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
                     <option value="">Selecione</option>
                     <option value="Escritório">Escritório</option>
                     <option value="Clínica">Clínica</option>
@@ -57,135 +50,119 @@
 
             <!-- Items Manual Input -->
             <div>
-                <label for="itemsManualInput" class="block text-sm font-medium text-gray-700 mb-1">Itens Solicitados (digite livremente):</label>
-                <textarea id="itemsManualInput" name="itemsManualInput" rows="8" required
-                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
+                <label for="itensSolicitados" class="block text-sm font-medium text-gray-300 mb-1">Itens Solicitados (digite livremente):</label>
+                <textarea id="itensSolicitados" name="itensSolicitados" rows="8" required
+                          class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100 resize-y"></textarea>
             </div>
 
             <!-- Total Value -->
             <div>
-                <label for="totalValue" class="block text-sm font-medium text-gray-700 mb-1">Valor Total Estimado (R$):</label>
-                <input type="number" id="totalValue" name="totalValue" step="0.01" min="0" value="0.00" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <label for="valorEstimado" class="block text-sm font-medium text-gray-300 mb-1">Valor Total Estimado (R$):</label>
+                <input type="number" id="valorEstimado" name="valorEstimado" step="0.01" min="0" value="0.00" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
 
             <!-- Shipping Cost -->
             <div>
-                <label for="shippingCost" class="block text-sm font-medium text-gray-700 mb-1">Frete (R$):</label>
-                <input type="number" id="shippingCost" name="shippingCost" step="0.01" min="0" value="0.00" required
-                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <label for="frete" class="block text-sm font-medium text-gray-300 mb-1">Frete (R$):</label>
+                <input type="number" id="frete" name="frete" step="0.01" min="0" value="0.00" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
 
-            <!-- Generate Report Button -->
-            <button type="submit" id="generateReportBtn"
-                    class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 ease-in-out shadow-lg font-semibold text-lg">
-                Gerar Relatório
+            <!-- Generate PDF Button -->
+            <button type="submit" id="generatePdfBtn"
+                    class="w-full bg-gray-600 text-gray-100 py-3 px-4 rounded-lg hover:bg-gray-700 transition duration-200 ease-in-out shadow-lg font-semibold text-lg">
+                Gerar PDF
             </button>
         </form>
 
         <!-- Submission Confirmation Message -->
-        <div id="confirmationMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 rounded-lg text-center">
-            Relatório (imagem) gerado com sucesso!
+        <div id="confirmationMessage" class="hidden mt-6 p-4 bg-gray-700 text-gray-100 rounded-lg text-center">
+            Relatório PDF gerado com sucesso!
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const requestDateInput = document.getElementById('requestDate');
-            const purchaseForm = document.getElementById('purchaseForm');
-            const confirmationMessage = document.getElementById('confirmationMessage');
+        document.getElementById("formSolicitacao").addEventListener("submit", function(e) {
+            e.preventDefault();
 
-            // Function to set the current date
-            function setCurrentDate() {
-                const today = new Date();
-                const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                requestDateInput.value = today.toLocaleDateString('pt-BR', options);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const solicitante = document.getElementById("solicitante").value;
+            const localDaCompra = document.getElementById("localDaCompra").value;
+            const itensSolicitados = document.getElementById("itensSolicitados").value;
+            const valorEstimado = parseFloat(document.getElementById("valorEstimado").value);
+            const frete = parseFloat(document.getElementById("frete").value);
+            const data = new Date().toLocaleDateString("pt-BR");
+            const totalGeral = (valorEstimado + frete).toFixed(2).replace('.', ',');
+
+            // PDF Content Generation
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text("Solicitação de Compra", 105, 20, null, null, "center");
+
+            let y = 40;
+            const margin = 20;
+            const pageHeight = doc.internal.pageSize.height;
+            const lineHeight = 7; // Estimated line height
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Data: ${data}`, margin, y);
+            y += 10;
+            doc.text(`Solicitante: ${solicitante}`, margin, y);
+            y += 10;
+            doc.text(`Local da Compra: ${localDaCompra}`, margin, y);
+            y += 20;
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Itens Solicitados:", margin, y);
+            y += 5;
+            doc.setFont("helvetica", "normal");
+            
+            // Split the text into lines to fit within the document width
+            const itensLines = doc.splitTextToSize(itensSolicitados, 170);
+
+            // Add the item lines, checking for new pages as needed
+            for (let i = 0; i < itensLines.length; i++) {
+                // Check if we need a new page
+                if (y + lineHeight > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin; // Reset y position for the new page
+                }
+                doc.text(itensLines[i], margin, y);
+                y += lineHeight;
             }
 
-            // Initial setup
-            setCurrentDate(); // Set date on page load
+            y += 10; // Add spacing before values
 
-            // Handle form submission (now for IMAGE generation)
-            purchaseForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent default form submission
+            // Check if there is enough space for the values and total
+            if (y + (3 * 10) > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
 
-                // Collect form data
-                const formData = new FormData(purchaseForm);
-                const data = {
-                    requesterName: formData.get('requesterName'),
-                    requestDate: formData.get('requestDate'),
-                    purchaseDestination: formData.get('purchaseDestination'), // New: Collect purchase destination
-                    itemsManualInput: formData.get('itemsManualInput'),
-                    totalValue: parseFloat(formData.get('totalValue') || 0),
-                    shippingCost: parseFloat(formData.get('shippingCost') || 0)
-                };
+            doc.setFont("helvetica", "bold");
+            doc.text("Valores:", margin, y);
+            y += 10;
+            doc.setFont("helvetica", "normal");
+            doc.text(`Valor Total Estimado: R$ ${valorEstimado.toFixed(2).replace('.', ',')}`, margin, y);
+            y += 10;
+            doc.text(`Frete: R$ ${frete.toFixed(2).replace('.', ',')}`, margin, y);
+            y += 10;
 
-                console.log('Dados para o Relatório:', data);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Total Geral: R$ ${totalGeral}`, margin, y);
+            
+            doc.save(`Solicitacao_Compra_${data.replace(/\//g, '_')}.pdf`);
 
-                // Build the report content as a string for html2canvas
-                const reportContentHtml = `
-                    <div style="padding: 20px; font-family: 'Inter', sans-serif; font-size: 12px; background-color: white; width: 800px; margin: auto;">
-                        <h1 style="text-align: center; color: #1f2937; font-size: 24px; margin-bottom: 20px;">Relatório de Solicitação de Compra</h1>
-                        <p style="margin-bottom: 10px;"><strong>Nome do Solicitante:</strong> ${data.requesterName}</p>
-                        <p style="margin-bottom: 10px;"><strong>Data da Solicitação:</strong> ${data.requestDate}</p>
-                        <p style="margin-bottom: 20px;"><strong>Local da Compra:</strong> ${data.purchaseDestination}</p>
-
-                        <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 10px;">Itens Solicitados:</h2>
-                        <div style="margin-bottom: 20px; white-space: pre-wrap; word-wrap: break-word; word-break: break-all;">
-                            ${data.itemsManualInput}
-                        </div>
-
-                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px;">
-                            Valor Total Estimado: R$ ${data.totalValue.toFixed(2).replace('.', ',')}
-                        </p>
-                        <p style="text-align: right; font-size: 18px; font-weight: bold; margin-top: 10px;">
-                            Frete: R$ ${data.shippingCost.toFixed(2).replace('.', ',')}
-                        </p>
-                        <p style="text-align: right; font-size: 20px; font-weight: bold; margin-top: 20px; padding-top: 10px; border-top: 2px solid #1f2937;">
-                            Total Geral: R$ ${(data.totalValue + data.shippingCost).toFixed(2).replace('.', ',')}
-                        </p>
-                    </div>
-                `;
-
-                // Create a temporary div to render the content for html2canvas
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = reportContentHtml;
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.left = '-9999px'; // Move off-screen
-                tempDiv.style.top = '-9999px';
-                document.body.appendChild(tempDiv);
-
-                html2canvas(tempDiv, {
-                    scale: 2, // Increase scale for better image quality
-                    logging: false,
-                    useCORS: true, // Important for images if any are used (though none here)
-                    backgroundColor: '#ffffff' // Ensure white background
-                }).then(canvas => {
-                    // Create a link to download the image
-                    const link = document.createElement('a');
-                    link.download = `solicitacao_compra_${data.requestDate.replace(/ /g, '_')}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    document.body.appendChild(link); // Append to body to make it clickable
-                    link.click(); // Programmatically click the link to trigger download
-                    document.body.removeChild(link); // Remove link after click
-                    document.body.removeChild(tempDiv); // Remove temporary div
-                }).catch(error => {
-                    console.error("Erro ao gerar imagem:", error);
-                    alert("Ocorreu um erro ao gerar o relatório como imagem. Por favor, tente novamente.");
-                    document.body.removeChild(tempDiv); // Ensure tempDiv is removed on error
-                });
-
-
-                // Display confirmation message
-                confirmationMessage.classList.remove('hidden');
-                purchaseForm.reset(); // Clear the form
-                setCurrentDate(); // Re-set the date
-
-                // Optionally hide the confirmation message after a few seconds
-                setTimeout(() => {
-                    confirmationMessage.classList.add('hidden');
-                }, 5000);
-            });
+            // Display confirmation message (optional, for user feedback)
+            const confirmationMessage = document.getElementById('confirmationMessage');
+            confirmationMessage.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationMessage.classList.add('hidden');
+            }, 5000);
         });
     </script>
 </body>
