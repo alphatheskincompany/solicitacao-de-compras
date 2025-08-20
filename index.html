@@ -37,15 +37,29 @@
                        class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
 
+            <!-- Date (Automatic) -->
+            <div>
+                <label for="dataSolicitacao" class="block text-sm font-medium text-gray-300 mb-1">Data da Solicitação:</label>
+                <input type="text" id="dataSolicitacao" name="dataSolicitacao" readonly
+                       class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-gray-100 cursor-not-allowed">
+            </div>
+
             <!-- Purchase Destination -->
             <div>
-                <label for="localDaCompra" class="block text-sm font-medium text-gray-300 mb-1">Local da Compra:</label>
-                <select id="localDaCompra" name="localDaCompra" required
+                <label for="centroDeCusto" class="block text-sm font-medium text-gray-300 mb-1">Centro de Custo:</label>
+                <select id="centroDeCusto" name="centroDeCusto" required
                         class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
                     <option value="">Selecione</option>
                     <option value="Escritório">Escritório</option>
                     <option value="Clínica">Clínica</option>
                 </select>
+            </div>
+            
+            <!-- Fornecedor -->
+            <div>
+                <label for="fornecedor" class="block text-sm font-medium text-gray-300 mb-1">Fornecedor:</label>
+                <input type="text" id="fornecedor" name="fornecedor" required
+                       class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
 
             <!-- Items Manual Input -->
@@ -68,6 +82,19 @@
                 <input type="number" id="frete" name="frete" step="0.01" min="0" value="0.00" required
                        class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
             </div>
+            
+            <!-- Payment Method -->
+            <div>
+                <label for="formaDePagamento" class="block text-sm font-medium text-gray-300 mb-1">Forma de Pagamento:</label>
+                <select id="formaDePagamento" name="formaDePagamento" required
+                        class="mt-1 block w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:ring-gray-400 focus:border-gray-400 bg-gray-700 text-gray-100">
+                    <option value="">Selecione</option>
+                    <option value="PIX">PIX</option>
+                    <option value="Boleto à Vista">Boleto à Vista</option>
+                    <option value="Boleto Faturado/Parcelado">Boleto Faturado/Parcelado</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                </select>
+            </div>
 
             <!-- Generate PDF Button -->
             <button type="submit" id="generatePdfBtn"
@@ -83,6 +110,11 @@
     </div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const dataSolicitacaoInput = document.getElementById("dataSolicitacao");
+            dataSolicitacaoInput.value = new Date().toLocaleDateString("pt-BR");
+        });
+
         document.getElementById("formSolicitacao").addEventListener("submit", function(e) {
             e.preventDefault();
 
@@ -90,11 +122,13 @@
             const doc = new jsPDF();
 
             const solicitante = document.getElementById("solicitante").value;
-            const localDaCompra = document.getElementById("localDaCompra").value;
+            const data = document.getElementById("dataSolicitacao").value;
+            const centroDeCusto = document.getElementById("centroDeCusto").value;
+            const fornecedor = document.getElementById("fornecedor").value;
+            const formaDePagamento = document.getElementById("formaDePagamento").value;
             const itensSolicitados = document.getElementById("itensSolicitados").value;
             const valorEstimado = parseFloat(document.getElementById("valorEstimado").value);
             const frete = parseFloat(document.getElementById("frete").value);
-            const data = new Date().toLocaleDateString("pt-BR");
             const totalGeral = (valorEstimado + frete).toFixed(2).replace('.', ',');
 
             // PDF Content Generation
@@ -113,7 +147,9 @@
             y += 10;
             doc.text(`Solicitante: ${solicitante}`, margin, y);
             y += 10;
-            doc.text(`Local da Compra: ${localDaCompra}`, margin, y);
+            doc.text(`Centro de Custo: ${centroDeCusto}`, margin, y);
+            y += 10;
+            doc.text(`Fornecedor: ${fornecedor}`, margin, y);
             y += 20;
 
             doc.setFont("helvetica", "bold");
@@ -138,7 +174,7 @@
             y += 10; // Add spacing before values
 
             // Check if there is enough space for the values and total
-            if (y + (3 * 10) > pageHeight - margin) {
+            if (y + (4 * 10) > pageHeight - margin) { // Adjusted check for 4 lines of values/payment
                 doc.addPage();
                 y = margin;
             }
@@ -150,6 +186,8 @@
             doc.text(`Valor Total Estimado: R$ ${valorEstimado.toFixed(2).replace('.', ',')}`, margin, y);
             y += 10;
             doc.text(`Frete: R$ ${frete.toFixed(2).replace('.', ',')}`, margin, y);
+            y += 10;
+            doc.text(`Forma de Pagamento: ${formaDePagamento}`, margin, y);
             y += 10;
 
             doc.setFont("helvetica", "bold");
